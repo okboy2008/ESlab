@@ -138,38 +138,7 @@ void skip_segment(FILE * fi)
 /* EOF instead of marker if end of file met while searching ...	  */
 /*----------------------------------------------------------------*/
 
-//unsigned int get_next_MK(FILE * fi)
-//{
-//	unsigned int c;
-//	int ffmet = 0;
-//	int locpassed = -1;
-//
-//	passed--;		/* as we fetch one anyway */
-//
-//	while ((c = fgetc(fi)) != (unsigned int)EOF) {
-//		switch (c) {
-//		case 0xFF:
-//			ffmet = 1;
-//			break;
-//		case 0x00:
-//			ffmet = 0;
-//			break;
-//		default:
-//			if (locpassed > 1)
-//				fprintf(stderr, "NOTE: passed %d bytes\n", locpassed);
-//			if (ffmet)
-//				return (0xFF00 | c);
-//			ffmet = 0;
-//			break;
-//		}
-//		locpassed++;
-//		passed++;
-//	}
-//
-//	return (unsigned int)EOF;
-//}
-
-unsigned int get_next_MK(char * fi)
+unsigned int get_next_MK(FILE * fi)
 {
 	unsigned int c;
 	int ffmet = 0;
@@ -177,7 +146,8 @@ unsigned int get_next_MK(char * fi)
 
 	passed--;		/* as we fetch one anyway */
 
-	while ( (c = *(fi++)) != (unsigned int)EOF) {
+	while ((c = fgetc(fi)) != (unsigned int)EOF) {
+		printf("in old loop, c = %x\n",c);
 		switch (c) {
 		case 0xFF:
 			ffmet = 1;
@@ -187,9 +157,12 @@ unsigned int get_next_MK(char * fi)
 			break;
 		default:
 			if (locpassed > 1)
-//				fprintf(stderr, "NOTE: passed %d bytes\n", locpassed);
-			if (ffmet)
+				fprintf(stderr, "NOTE: passed %d bytes\n", locpassed);
+			if (ffmet){
+				printf("old c: %x\n",c);
 				return (0xFF00 | c);
+			}
+				
 			ffmet = 0;
 			break;
 		}

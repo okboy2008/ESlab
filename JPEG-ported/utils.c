@@ -63,21 +63,12 @@ void suicide(void)
 
 /*-------------------------------------------*/
 
-//void aborted_stream(char * fi)
-//{
-//	fprintf(stderr, "%ld:\tERROR:\tAbnormal end of decompression process!\n", ftell(fi));
-//	fprintf(stderr, "\tINFO:\tTotal skipped bytes %d, total stuffers %d\n", passed, stuffers);
-//
-//	fclose(fi);
-//
-//	free_structures();
-//
-//	if (DEBUG)
-//		suicide();
-//}
-
-void aborted_stream(char * fi)
+void aborted_stream(FILE * fi)
 {
+	fprintf(stderr, "%ld:\tERROR:\tAbnormal end of decompression process!\n", ftell(fi));
+	fprintf(stderr, "\tINFO:\tTotal skipped bytes %d, total stuffers %d\n", passed, stuffers);
+
+	fclose(fi);
 
 	free_structures();
 

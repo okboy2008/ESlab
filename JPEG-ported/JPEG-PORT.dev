@@ -1,6 +1,6 @@
 [Project]
-FileName=JPEG.dev
-Name=JPEG
+FileName=JPEG-PORT.dev
+Name=JPEG-PORT
 Type=1
 Ver=2
 ObjFiles=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=
-UnitCount=15
+UnitCount=14
 
 [VersionInfo]
 Major=1
@@ -53,7 +53,7 @@ SyncProduct=1
 [Unit1]
 FileName=5kk03.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -63,7 +63,7 @@ BuildCmd=
 [Unit2]
 FileName=5kk03.h
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -72,7 +72,7 @@ BuildCmd=
 
 [Unit3]
 FileName=bin2h.py
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=0
 Link=0
 Priority=1000
@@ -82,7 +82,7 @@ BuildCmd=
 [Unit4]
 FileName=color.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -92,7 +92,7 @@ BuildCmd=
 [Unit5]
 FileName=fast_int_idct.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -102,7 +102,7 @@ BuildCmd=
 [Unit6]
 FileName=huffman.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -112,7 +112,7 @@ BuildCmd=
 [Unit7]
 FileName=jpeg.h
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -122,26 +122,17 @@ BuildCmd=
 [Unit8]
 FileName=jpegtobmp.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit9]
-FileName=Makefile
-Folder=JPEG
-Compile=0
-Link=0
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit10]
-FileName=memmap.h
+FileName=parse.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -149,28 +140,29 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit11]
-FileName=parse.c
-CompileCpp=0
-Folder=JPEG
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit12]
 FileName=surfer.jpg
-Folder=JPEG
+CompileCpp=0
+Folder=JPEG-PORT
 Compile=0
 Link=0
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit13]
+[Unit12]
 FileName=surfer.jpg.h
+Folder=JPEG-PORT
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
 CompileCpp=0
-Folder=JPEG
+
+[Unit13]
+FileName=table_vld.c
+CompileCpp=0
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -178,9 +170,9 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit14]
-FileName=table_vld.c
+FileName=utils.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
@@ -190,7 +182,17 @@ BuildCmd=
 [Unit15]
 FileName=utils.c
 CompileCpp=0
-Folder=JPEG
+Folder=JPEG-PORT
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit9]
+FileName=memmap.h
+CompileCpp=0
+Folder=JPEG-PORT
 Compile=1
 Link=1
 Priority=1000
