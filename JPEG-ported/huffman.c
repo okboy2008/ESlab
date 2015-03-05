@@ -71,3 +71,83 @@ void unpack_block(FILE * fi, FBlock * T, int select)
 		T->linear[G_ZZ[i]] = value * QTable[(int)comp[select].QT]->linear[i];
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//
+//   modified
+//
+/////////////////////////////////////////////////////////////////////////////////////////
+
+void unpack_block1(char ** fi, int * counter, FBlock * T, int select)
+{
+	unsigned int i, run, cat;
+	int value;
+	unsigned char symbol;
+
+	/* Init the block with 0's: */
+	for (i = 0; i < 64; i++)
+		T->linear[i] = 0;
+
+	/* First get the DC coefficient: */
+	symbol = get_symbol1(fi, counter, HUFF_ID(DC_CLASS, comp[select].DC_HT));
+	value = reformat(get_bits1(fi, counter, symbol), symbol);
+
+	value += comp[select].PRED;
+	comp[select].PRED = value;
+	T->linear[0] = value * QTable[(int)comp[select].QT]->linear[0];
+
+	/* Now get all 63 AC values: */
+	for (i = 1; i < 64; i++) {
+		symbol = get_symbol1(fi, counter, HUFF_ID(AC_CLASS, comp[select].AC_HT));
+		if (symbol == HUFF_EOB)
+			break;
+		if (symbol == HUFF_ZRL) {
+			i += 15;
+			continue;
+		}
+		cat = symbol & 0x0F;
+		run = (symbol >> 4) & 0x0F;
+		i += run;
+		value = reformat(get_bits1(fi, counter, cat), cat);
+
+		/* Dequantify and ZigZag-reorder: */
+		T->linear[G_ZZ[i]] = value * QTable[(int)comp[select].QT]->linear[i];
+	}
+}
+
+void unpack_block2(char ** fi, int * counter, FBlock * T, int select)
+{
+	unsigned int i, run, cat;
+	int value;
+	unsigned char symbol;
+
+	/* Init the block with 0's: */
+	for (i = 0; i < 64; i++)
+		T->linear[i] = 0;
+
+	/* First get the DC coefficient: */
+	symbol = get_symbol2(fi, counter, HUFF_ID(DC_CLASS, comp[select].DC_HT));
+	value = reformat(get_bits2(fi, counter, symbol), symbol);
+
+	value += comp[select].PRED;
+	comp[select].PRED = value;
+	T->linear[0] = value * QTable[(int)comp[select].QT]->linear[0];
+
+	/* Now get all 63 AC values: */
+	for (i = 1; i < 64; i++) {
+		symbol = get_symbol2(fi, counter, HUFF_ID(AC_CLASS, comp[select].AC_HT));
+		if (symbol == HUFF_EOB)
+			break;
+		if (symbol == HUFF_ZRL) {
+			i += 15;
+			continue;
+		}
+		cat = symbol & 0x0F;
+		run = (symbol >> 4) & 0x0F;
+		i += run;
+		value = reformat(get_bits2(fi, counter, cat), cat);
+
+		/* Dequantify and ZigZag-reorder: */
+		T->linear[G_ZZ[i]] = value * QTable[(int)comp[select].QT]->linear[i];
+	}
+}

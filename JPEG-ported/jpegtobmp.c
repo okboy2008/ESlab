@@ -76,77 +76,22 @@ void convertJpeg(int* src, int* dst, int num){
 	}
 }
 
-unsigned int get_next_MK1(char ** fi,int* counter)
-{
-	unsigned int c;
-	int ffmet = 0;
-	int locpassed = -1;
-//	int counter=*c;
-
-	passed--;		/* as we fetch one anyway */
-	c = (*(*fi));
-	
-	printf("out loop, c = %x\n",c);
-	
-	while ( (*counter)<201*sizeof(int)) {
-		c = (*(*fi));
-		c = c<<24;
-		c = c>>24;
-		printf("in loop, c = %x\n",c);
+char getChar(char** fi, int* counter){
+		unsigned char c = (*(*fi));
 		(*counter)++;
 		(*fi)++;
-		switch (c) {
-		case 0xFF:
-			ffmet = 1;
-			break;
-		case 0x00:
-			ffmet = 0;
-			break;
-		default:
-			if (locpassed > 1)
-				fprintf(stderr, "NOTE: passed %d bytes\n", locpassed);
-			if (ffmet){
-				printf("new c: %x\n",c);
-				return (0xFF00 | c);
-			}
-			
-			ffmet = 0;
-			break;
-		}
-		
-		locpassed++;
-		passed++;
-	}
-
-	return (unsigned int)EOF;
-}
-
-unsigned int get_size1(char ** fi, int * counter)
-{
-	unsigned char aux,aux1;
-
-	aux = *(*fi);
-	aux=aux<<24;
-	aux=aux>>24;
-	(*fi)++;
-	(*counter)++;
-	aux1 = *(*fi);
-	aux1=aux1<<24;
-	aux1=aux1>>24;
-	(*fi)++;
-	(*counter)++;
-	return (aux << 8) | aux1;	/* big endian */
-}
-
-char getChar(char** fi, int* counter){
-		char c = (*(*fi));
-		(*counter)++;
-		c = c<<24;
-		c = c>>24;
 		return c;
 }
 
-int JpegToBmp(char *fi, char *file2)
+char GETCHAR(char** fi,int* counter){
+	int* input=(int*)(*fi-*counter);
+	unsigned int c = ((input[(*counter) / 4] << (8 * ((*counter) % 4))) >> 24) & 0x00ff;
+	(*counter)++;
+	(*fi)++;
+	return c;
+}
+
+int JpegToBmp1(char *fi, char *file2)
 {
 	unsigned int aux, mark;
 	int n_restarts, restart_interval, leftover;	/* RST check */
@@ -168,6 +113,7 @@ int JpegToBmp(char *fi, char *file2)
 	/* Now process segments as they appear: */
 	do {
 		mark = get_next_MK1(&fi,&counter);
+		printf("1: %x, %d\n",mark,counter);
 
 		switch (mark) {
 		case SOF_MK:
@@ -220,6 +166,7 @@ int JpegToBmp(char *fi, char *file2)
 				return -1;
 
 			/* dimension scan buffer for YUV->RGB conversion */
+			printf("buffer size: frame size=%d, color size=%d\n",x_size * y_size * n_comp,MCU_sx * MCU_sy * n_comp);
 			FrameBuffer = (unsigned char *)malloc((size_t) x_size * y_size * n_comp);
 			ColorBuffer = (unsigned char *)malloc((size_t) MCU_sx * MCU_sy * n_comp);
 			FBuff = (FBlock *) malloc(sizeof(FBlock));
@@ -234,14 +181,14 @@ int JpegToBmp(char *fi, char *file2)
 		case DHT_MK:
 			if (verbose)
 				fprintf(stderr, "%ld:\tINFO:\tDefining Huffman Tables\n", counter);
-			if (load_huff_tables(fi) == -1)
+			if (load_huff_tables1(&fi,&counter) == -1)
 				return -1;
 			break;
 
 		case DQT_MK:
 			if (verbose)
 				fprintf(stderr, "%ld:\tINFO:\tDefining Quantization Tables\n", counter);
-			if (load_quant_tables(fi) == -1)
+			if (load_quant_tables1(&fi,&counter) == -1)
 				return -1;
 			break;
 
@@ -295,15 +242,15 @@ int JpegToBmp(char *fi, char *file2)
 
 				for (i = 0; i < n_restarts; i++) {
 					for (j = 0; j < restart_interval; j++)
-						process_MCU(fi);
+						process_MCU1(&fi,&counter);
 					/* proc till all EOB met */
 
-					aux = get_next_MK(fi);
+					aux = get_next_MK1(&fi,&counter);
 					if (!RST_MK(aux)) {
-						fprintf(stderr, "%ld:\tERROR:\tLost Sync after interval!\n", ftell(fi));
-						aborted_stream(fi);
+						fprintf(stderr, "%ld:\tERROR:\tLost Sync after interval!\n", counter);
+						return -1;
 					} else if (verbose)
-						fprintf(stderr, "%ld:\tINFO:\tFound Restart Marker\n", ftell(fi));
+						fprintf(stderr, "%ld:\tINFO:\tFound Restart Marker\n", counter);
 
 					reset_prediction();
 					clear_bits();
@@ -313,21 +260,21 @@ int JpegToBmp(char *fi, char *file2)
 
 			/* process till end of row without restarts */
 			for (i = 0; i < leftover; i++)
-				process_MCU(fi);
+				process_MCU1(&fi,&counter);
 
 			in_frame = 0;
 			break;
 
 		case EOI_MK:
 			if (verbose)
-				fprintf(stderr, "%ld:\tINFO:\tFound the EOI marker!\n", ftell(fi));
+				fprintf(stderr, "%ld:\tINFO:\tFound the EOI marker!\n", counter);
 			if (in_frame)
-				aborted_stream(fi);
+				return -1;
 
 			if (verbose)
 				fprintf(stderr, "\tINFO:\tTotal skipped bytes %d, total stuffers %d\n", passed,
 					stuffers);
-			fclose(fi);
+			//fclose(fi);
 
 			write_bmp(file2);
 
@@ -337,20 +284,21 @@ int JpegToBmp(char *fi, char *file2)
 
 		case COM_MK:
 			if (verbose)
-				fprintf(stderr, "%ld:\tINFO:\tSkipping comments\n", ftell(fi));
-			skip_segment(fi);
+				fprintf(stderr, "%ld:\tINFO:\tSkipping comments\n", counter);
+			skip_segment1(&fi,&counter);
 			break;
 
 		case EOF:
 			if (verbose)
-				fprintf(stderr, "%ld:\tERROR:\tRan out of input data!\n", ftell(fi));
-			aborted_stream(fi);
+				fprintf(stderr, "%ld:\tERROR:\tRan out of input data!\n", counter);
+			return -1;
 
 		default:
 			if ((mark & MK_MSK) == APP_MK) {
+				printf("in APP_MK mark: %x\n",mark);
 				if (verbose)
-					fprintf(stderr, "%ld:\tINFO:\tSkipping application data\n", ftell(fi));
-				skip_segment(fi);
+					fprintf(stderr, "%ld:\tINFO:\tSkipping application data\n", counter);
+				skip_segment1(&fi,&counter);
 				break;
 			}
 			if (RST_MK(mark)) {
@@ -358,8 +306,228 @@ int JpegToBmp(char *fi, char *file2)
 				break;
 			}
 			/* if all else has failed ... */
-			fprintf(stderr, "%ld:\tWARNING:\tLost Sync outside scan, %d!\n", ftell(fi), mark);
-			aborted_stream(fi);
+			fprintf(stderr, "%ld:\tWARNING:\tLost Sync outside scan, %d!\n", counter, mark);
+			return -1;
+			break;
+		}		/* end switch */
+	} while (1);
+
+	return 0;
+}
+
+int JpegToBmp2(char *fi, char *file2)
+{
+	unsigned int aux, mark;
+	int n_restarts, restart_interval, leftover;	/* RST check */
+	int i, j;
+	int counter=0;
+
+	/* First find the SOI marker: */
+	aux = get_next_MK2(&fi,&counter);
+	if (aux != SOI_MK)
+		return -1;
+
+	if (verbose)
+		fprintf(stderr, "%ld:\tINFO:\tFound the SOI marker!\n", counter);
+	in_frame = 0;
+	restart_interval = 0;
+	for (i = 0; i < 4; i++)
+		QTvalid[i] = 0;
+
+	/* Now process segments as they appear: */
+	do {
+		mark = get_next_MK2(&fi,&counter);
+		printf("1: %x, %d\n",mark,counter);
+
+		switch (mark) {
+		case SOF_MK:
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tFound the SOF marker!\n", counter);
+			in_frame = 1;
+			get_size2(&fi,&counter);	/* header size, don't care */
+
+			/* load basic image parameters */
+			//fgetc(fi);	/* precision, 8bit, don't care */
+			GETCHAR(&fi,&counter);
+			y_size = get_size2(&fi,&counter);
+			x_size = get_size2(&fi,&counter);
+			if (verbose)
+				fprintf(stderr, "\tINFO:\tImage size is %d by %d\n", x_size, y_size);
+
+			//n_comp = fgetc(fi);	/* # of components */
+			n_comp=GETCHAR(&fi,&counter);
+			if (verbose) {
+				fprintf(stderr, "\tINFO:\t");
+				switch (n_comp) {
+				case 1:
+					fprintf(stderr, "Monochrome");
+					break;
+				case 3:
+					fprintf(stderr, "Color");
+					break;
+				default:
+					fprintf(stderr, "Not a");
+					break;
+				}
+				fprintf(stderr, " JPEG image!\n");
+			}
+
+			for (i = 0; i < n_comp; i++) {
+				/* component specifiers */
+				comp[i].CID = GETCHAR(&fi,&counter);
+				aux = GETCHAR(&fi,&counter);
+				comp[i].HS = first_quad(aux);
+				comp[i].VS = second_quad(aux);
+				comp[i].QT = GETCHAR(&fi,&counter);
+			}
+			if ((n_comp > 1) && verbose)
+				fprintf(stderr,
+					"\tINFO:\tColor format is %d:%d:%d, H=%d\n",
+					comp[0].HS * comp[0].VS, comp[1].HS * comp[1].VS, comp[2].HS * comp[2].VS,
+					comp[1].HS);
+
+			if (init_MCU() == -1)
+				return -1;
+
+			/* dimension scan buffer for YUV->RGB conversion */
+			printf("buffer size: frame size=%d, color size=%d\n",x_size * y_size * n_comp,MCU_sx * MCU_sy * n_comp);
+			FrameBuffer = (unsigned char *)malloc((size_t) x_size * y_size * n_comp);
+			ColorBuffer = (unsigned char *)malloc((size_t) MCU_sx * MCU_sy * n_comp);
+			FBuff = (FBlock *) malloc(sizeof(FBlock));
+			PBuff = (PBlock *) malloc(sizeof(PBlock));
+
+			if ((FrameBuffer == NULL) || (ColorBuffer == NULL) || (FBuff == NULL) || (PBuff == NULL)) {
+				fprintf(stderr, "\tERROR:\tCould not allocate pixel storage!\n");
+				exit(1);
+			}
+			break;
+
+		case DHT_MK:
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tDefining Huffman Tables\n", counter);
+			if (load_huff_tables2(&fi,&counter) == -1)
+				return -1;
+			break;
+
+		case DQT_MK:
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tDefining Quantization Tables\n", counter);
+			if (load_quant_tables2(&fi,&counter) == -1)
+				return -1;
+			break;
+
+		case DRI_MK:
+//			get_size(fi);	/* skip size */
+			get_size2(&fi,&counter);
+			restart_interval = get_size2(&fi,&counter);
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tDefining Restart Interval %d\n", counter,
+					restart_interval);
+			break;
+
+		case SOS_MK:	/* lots of things to do here */
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tFound the SOS marker!\n", counter);
+			get_size2(&fi,&counter);	/* don't care */
+			aux = GETCHAR(&fi,&counter);
+			if (aux != (unsigned int)n_comp) {
+				fprintf(stderr, "\tERROR:\tBad component interleaving!\n");
+				return -1;
+			}
+
+			for (i = 0; i < n_comp; i++) {
+				aux = GETCHAR(&fi,&counter);
+				if (aux != comp[i].CID) {
+					fprintf(stderr, "\tERROR:\tBad Component Order!\n");
+					return -1;
+				}
+				aux = GETCHAR(&fi,&counter);
+				comp[i].DC_HT = first_quad(aux);
+				comp[i].AC_HT = second_quad(aux);
+			}
+			get_size2(&fi,&counter);
+//			fgetc(fi);	/* skip things */
+			GETCHAR(&fi,&counter);
+
+			MCU_column = 0;
+			MCU_row = 0;
+			clear_bits();
+			reset_prediction();
+
+			/* main MCU processing loop here */
+			if (restart_interval) {
+				n_restarts = ceil_div(mx_size * my_size, restart_interval) - 1;
+				leftover = mx_size * my_size - n_restarts * restart_interval;
+				/* final interval may be incomplete */
+
+				for (i = 0; i < n_restarts; i++) {
+					for (j = 0; j < restart_interval; j++)
+						process_MCU2(&fi,&counter);
+					/* proc till all EOB met */
+
+					aux = get_next_MK2(&fi,&counter);
+					if (!RST_MK(aux)) {
+						fprintf(stderr, "%ld:\tERROR:\tLost Sync after interval!\n", counter);
+						return -1;
+					} else if (verbose)
+						fprintf(stderr, "%ld:\tINFO:\tFound Restart Marker\n", counter);
+
+					reset_prediction();
+					clear_bits();
+				}	/* intra-interval loop */
+			} else
+				leftover = mx_size * my_size;
+
+			/* process till end of row without restarts */
+			for (i = 0; i < leftover; i++)
+				process_MCU2(&fi,&counter);
+
+			in_frame = 0;
+			break;
+
+		case EOI_MK:
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tFound the EOI marker!\n", counter);
+			if (in_frame)
+				return -1;
+
+			if (verbose)
+				fprintf(stderr, "\tINFO:\tTotal skipped bytes %d, total stuffers %d\n", passed,
+					stuffers);
+			//fclose(fi);
+
+			write_bmp(file2);
+
+			free_structures();
+			return 0;
+			break;
+
+		case COM_MK:
+			if (verbose)
+				fprintf(stderr, "%ld:\tINFO:\tSkipping comments\n", counter);
+			skip_segment2(&fi,&counter);
+			break;
+
+		case EOF:
+			if (verbose)
+				fprintf(stderr, "%ld:\tERROR:\tRan out of input data!\n", counter);
+			return -1;
+
+		default:
+			if ((mark & MK_MSK) == APP_MK) {
+				printf("in APP_MK mark: %x\n",mark);
+				if (verbose)
+					fprintf(stderr, "%ld:\tINFO:\tSkipping application data\n", counter);
+				skip_segment2(&fi,&counter);
+				break;
+			}
+			if (RST_MK(mark)) {
+				reset_prediction();
+				break;
+			}
+			/* if all else has failed ... */
+			fprintf(stderr, "%ld:\tWARNING:\tLost Sync outside scan, %d!\n", counter, mark);
+			return -1;
 			break;
 		}		/* end switch */
 	} while (1);
@@ -374,37 +542,46 @@ int main()
 	int i;
 	convertJpeg(surfer_jpg,surfer,201);
 //	get_next_MK() test
-	char *file1="./surfer.jpg";
-	fi = fopen(file1, "rb");
-	if (fi == NULL) {
-		printf("unable to open the file %s\n", file1);
-		return 0;
-	}
-	int aux;
-	for(i=0;i<3;i++){
-		printf("loop %d:\n",i);
-		aux = get_next_MK(fi);
-		printf("old value: %x\n",aux);
-	}
-	
-	
+//	char *file1="./surfer.jpg";
+//	fi = fopen(file1, "rb");
+//	if (fi == NULL) {
+//		printf("unable to open the file %s\n", file1);
+//		return 0;
+//	}
+//	int aux;
+//	for(i=0;i<3;i++){
+//		printf("loop %d:\n",i);
+//		aux = get_next_MK(fi);
+//		printf("old value: %x\n",aux);
+//	}
+//	printf("old getsize: %d\n",get_size(fi));
+//	printf("old fgetc: %x\n",fgetc(fi));
+//	
 	char *test=(char*)surfer;
-	for(i=0;i<3;i++){
-		printf("loop %d:\n",i);
-		printf("old addr: %x\n",test);
-		aux=get_next_MK1(&test,&counter);
-		printf("new addr: %x\n",test);
-		printf("new value: %x\n",aux);
-	}
-	
-	
-//	printf("EOF: %x\n",(unsigned int)EOF);
-//	char cc=*((char*)surfer);
-	printf("counter: %d",counter);
-	
+	char *test2=(char*)surfer_jpg;
+//	for(i=0;i<3;i++){
+//		printf("loop %d:\n",i);
+//		printf("old addr: %x\n",test);
+//		aux=get_next_MK2(&test,&counter);
+//		printf("new addr: %x\n",test);
+//		printf("new value: %x\n",aux);
+//	}
+//	
+//	
+//	
+////	printf("EOF: %x\n",(unsigned int)EOF);
+////	char cc=*((char*)surfer);
+//	printf("counter: %d\n",counter);
+//	printf("new getsize: %d\n",get_size1(&test,&counter));
+//	printf("counter: %d\n",counter);
+//	printf("new getchar: %x\n",getChar(&test,&counter));
+//	printf("counter: %d\n",counter);
+//	
 
 
 //	JpegToBmp("./surfer.jpg", "surfer.bmp");
+//	JpegToBmp1(test,"surfer2.bmp");
+	JpegToBmp2(test2,"surfer3.bmp");
 	return 0;
 
 }
@@ -440,6 +617,7 @@ int JpegToBmp(char *file1, char *file2)
 	/* Now process segments as they appear: */
 	do {
 		mark = get_next_MK(fi);
+		printf("0: %x, %d\n",mark,ftell(fi));
 
 		switch (mark) {
 		case SOF_MK:

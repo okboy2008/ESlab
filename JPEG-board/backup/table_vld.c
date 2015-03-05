@@ -204,14 +204,14 @@ int load_huff_tables2(char ** fi, int * counter)
 	int AuxCode;
 
 	size = get_size2(fi,counter);	/* this is the tables' size */
-//	printf("load_huff_tables1 size: %d\n",size);
+	printf("load_huff_tables1 size: %d\n",size);
 
 	size -= 2;
 
 	while (size > 0) {
 
 		aux = GETCHAR(fi,counter);
-//		printf("load_huff_tables1 aux: %x\n",aux);
+		printf("load_huff_tables1 aux: %x\n",aux);
 		hclass = first_quad(aux);	/* AC or DC */
 		id = second_quad(aux);	/* table no */
 		if (id > 1) {
@@ -231,7 +231,7 @@ int load_huff_tables2(char ** fi, int * counter)
 //			LeavesN = GETCHAR(fi,counter)<<24;
 //			LeavesN = LeavesN>>24;
 			LeavesN = GETCHAR(fi,counter);
-//			printf("load_huff_tables1 LeavesN: %x\n",LeavesN);
+			printf("load_huff_tables1 LeavesN: %x\n",LeavesN);
 
 			ValPtr[id][i] = LeavesT;
 			MinCode[id][i] = AuxCode * 2;
