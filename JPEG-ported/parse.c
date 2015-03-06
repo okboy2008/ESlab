@@ -610,14 +610,14 @@ unsigned int get_size2(char ** fi, int * counter)
 //	(*fi)++;
 //	(*counter)++;
 	aux=GETCHAR(fi,counter);
-//	aux1 = *(*fi);
+	aux1 = GETCHAR(fi,counter);
 ////	printf("__aux1: %x\n",aux1);
 //	
 //	(*fi)++;
 //	(*counter)++;
-//	printf("aux: %x\n",aux);
+	printf("aux: %x, aux1: %x\n",aux,aux1);
 //	printf("aux1: %x\n",aux1);
-	return (aux << 8) | GETCHAR(fi,counter);	/* big endian */
+	return ((aux << 8) | aux1);	/* big endian */
 }
 
 
@@ -659,12 +659,14 @@ int load_quant_tables2(char ** fi, int * counter)
 {
 	char aux;
 	unsigned int size, n, i, id, x;
-
+	printf("load quant tables2\n");
 	size = get_size2(fi,counter);	/* this is the tables' size */
+	printf("counter=%d,size=%d",*counter,size);
 	n = (size - 2) / 65;
 
 	for (i = 0; i < n; i++) {
 		aux = GETCHAR(fi,counter);
+		printf("counter=%d,aux=%x",*counter,aux);
 		if (first_quad(aux) > 0) {
 			fprintf(stderr, "\tERROR:\tBad QTable precision!\n");
 			return -1;

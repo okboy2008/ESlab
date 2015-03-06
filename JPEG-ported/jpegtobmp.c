@@ -275,7 +275,7 @@ int JpegToBmp1(char *fi, char *file2)
 				fprintf(stderr, "\tINFO:\tTotal skipped bytes %d, total stuffers %d\n", passed,
 					stuffers);
 			//fclose(fi);
-
+		
 			write_bmp(file2);
 
 			free_structures();
@@ -390,7 +390,7 @@ int JpegToBmp2(char *fi, char *file2)
 				return -1;
 
 			/* dimension scan buffer for YUV->RGB conversion */
-			printf("buffer size: frame size=%d, color size=%d\n",x_size * y_size * n_comp,MCU_sx * MCU_sy * n_comp);
+//			printf("buffer size: frame size=%d, color size=%d\n",x_size * y_size * n_comp,MCU_sx * MCU_sy * n_comp);
 			FrameBuffer = (unsigned char *)malloc((size_t) x_size * y_size * n_comp);
 			ColorBuffer = (unsigned char *)malloc((size_t) MCU_sx * MCU_sy * n_comp);
 			FBuff = (FBlock *) malloc(sizeof(FBlock));
@@ -495,7 +495,11 @@ int JpegToBmp2(char *fi, char *file2)
 				fprintf(stderr, "\tINFO:\tTotal skipped bytes %d, total stuffers %d\n", passed,
 					stuffers);
 			//fclose(fi);
-
+			int i;
+			printf("framebuffer:\n");
+			for(i=0;i<10;i++){
+				printf("%d:%x\n",i,FrameBuffer[i]);
+			}
 			write_bmp(file2);
 
 			free_structures();
@@ -533,6 +537,14 @@ int JpegToBmp2(char *fi, char *file2)
 	} while (1);
 
 	return 0;
+}
+
+
+void memmove1 ( void * destination, void * source, size_t num ){
+	int i;
+	for(i=0;i<num;i++){
+		*((char*)(destination+i))=*((char*)(source+i));
+	}
 }
 
 int main()
@@ -582,7 +594,10 @@ int main()
 //	JpegToBmp("./surfer.jpg", "surfer.bmp");
 //	JpegToBmp1(test,"surfer2.bmp");
 	JpegToBmp2(test2,"surfer3.bmp");
-	return 0;
+	char str[] = "memmove can be very useful......";
+  	memmove (str+20,str+15,11);
+  	puts (str);
+  	return 0;
 
 }
 
