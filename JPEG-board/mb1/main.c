@@ -63,9 +63,29 @@ int passed = 0;
 
 int verbose = 0;
 
+int image_width=32;
+int image_height=24;
 
+void move2buffer(char* src, int* dst){
+	int i,j;
+	pixel p;
+	int* start=dst;
+	for(i=0;i<image_height;i++){
+		for(j=0;j<image_width;j++){
+			p.B=src[0];
+			p.G=src[1];
+			p.R=src[2];
+			src+=3;
+			*dst=p.value;
+			if(j==image_width-1)
+				dst=start+1024*(i+1);
+			else
+				dst+=1;
+		}
+	}
+}
 
-int JpegToBmp2(char *fi)
+int JpegToBmp2(char *fi,int* outputBuffer)
 {
 	unsigned int aux, mark;
 	int n_restarts, restart_interval, leftover;	/* RST check */
@@ -249,7 +269,7 @@ int JpegToBmp2(char *fi)
 				mk_mon_debug_info(FrameBuffer[i]);
 			}
 			// write_bmp(file2);
-
+			move2buffer(FrameBuffer, outputBuffer);
 			// free_structures();
 			return 0;
 			break;
@@ -293,8 +313,8 @@ int main(int argc, char**argv)
 	TIME start,stop,diff;
 
 	volatile char    *image       = (char*)surfer_jpg;
-	volatile char    *image1       = (char*)(shared_pt_REMOTEADDR+4*1024*1024);
-	// volatile pixel_fb *FrameBuffer = (pixel_fb *)shared_pt_REMOTEADDR; 
+	// volatile char    *image1       = (char*)(shared_pt_REMOTEADDR+4*1024*1024);
+	volatile int     *FrameBuffer1 = (int *)shared_pt_REMOTEADDR; 
 	// volatile float* edgeBuffer = (float *)(shared_pt_REMOTEADDR+8*1024*1024);
 
 	// Sync with the monitor.
@@ -317,7 +337,7 @@ int main(int argc, char**argv)
 		// mk_mon_debug_info(c);
 		// mk_mon_debug_info(c1);
 	// }
-	JpegToBmp2(image);
+	JpegToBmp2(image,FrameBuffer1);
 	
 
 

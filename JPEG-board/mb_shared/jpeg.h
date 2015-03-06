@@ -40,6 +40,16 @@
 #define DC_CLASS        0
 #define AC_CLASS        1
 
+
+typedef  union {
+	struct {
+		unsigned char B;
+		unsigned char G;
+		unsigned char R;
+		unsigned char A;
+	};
+	int value;
+} pixel;
 /*-------------------------------------------------------*/
 /* JPEG data types here					*/
 /*-------------------------------------------------------*/

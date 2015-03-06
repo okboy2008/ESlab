@@ -35,6 +35,8 @@ void color_conversion(void)
 	long r, g, b;
 	long offset;
 
+	printf("rows MCU_sy:%d\n",MCU_sy); 
+	printf("columns MCU_sx:%d\n",MCU_sx); 
 	for (i = 0; i < MCU_sy; i++) {	/* pixel rows */
 		int ip_0 = i >> comp[0].VDIV;
 		int ip_1 = i >> comp[1].VDIV;
@@ -64,6 +66,7 @@ void color_conversion(void)
 			b = y + ((227 * rcb) >> 7);
 
 			offset = 3 * (i_times_MCU_sx + j);
+			printf("color conversion offset:%d\n",offset);
 			ColorBuffer[offset + 2] = Saturate(r);
 			ColorBuffer[offset + 1] = Saturate(g);
 			ColorBuffer[offset + 0] = Saturate(b);
